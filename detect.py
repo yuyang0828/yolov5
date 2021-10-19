@@ -11,6 +11,7 @@ import os
 import sys
 from pathlib import Path
 
+import pandas as pd
 import cv2
 import numpy as np
 import torch
@@ -30,7 +31,6 @@ from utils.general import apply_classifier, check_img_size, check_imshow, check_
 from utils.plots import Annotator, colors
 from utils.torch_utils import load_classifier, select_device, time_sync
 
-csv_result = []
 
 @torch.no_grad()
 def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
@@ -58,9 +58,10 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
         hide_conf=False,  # hide confidences
         half=False,  # use FP16 half-precision inference
         dnn=False,  # use OpenCV DNN for ONNX inference
-        save_csv=False
+        save_csv=ROOT / 'test.csv'
         ):
     source = str(source)
+    csv_result = []
     save_img = not nosave and not source.endswith('.txt')  # save inference images
     webcam = source.isnumeric() or source.endswith('.txt') or source.lower().startswith(
         ('rtsp://', 'rtmp://', 'http://', 'https://'))
@@ -227,7 +228,8 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
                         annotator.box_label(xyxy, label, color=colors(c, True))
                         if save_crop:
                             save_one_box(xyxy, imc, file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg', BGR=True)
-                    if save_csv:
+                    if c != 3 and save_csv:
+                      
                         csv_class = names[c]
                         csv_bbox = torch.tensor(xyxy).view(1,4).view(-1).tolist()
                         csv_left = csv_bbox[0]
@@ -236,9 +238,7 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
                         csv_height = csv_bbox[3] - csv_bbox[1]
                         csv_conf = conf.tolist()
                         csv_video_frame = p.name.replace('.jpg', '')
-                        print(csv_class)
-                        one_line = [csv_video_frame, csv_left, csv_width, csv_top, csv_height, csv_conf]
-                        print(one_line)
+                        one_line = [[csv_video_frame, csv_left, csv_width, csv_top, csv_height, csv_conf]]
                         one_line = pd.DataFrame(one_line, columns=['video_frame', 'left', 'width', 'top', 'height', 'conf'])
                         csv_result.append(one_line)
 
@@ -311,7 +311,7 @@ def parse_opt():
     parser.add_argument('--hide-conf', default=False, action='store_true', help='hide confidences')
     parser.add_argument('--half', action='store_true', help='use FP16 half-precision inference')
     parser.add_argument('--dnn', action='store_true', help='use OpenCV DNN for ONNX inference')
-    parse.add_argument('--save_csv', action='store_true')
+    parser.add_argument('--save-csv', type=str, help='use lala')
     opt = parser.parse_args()
     opt.imgsz *= 2 if len(opt.imgsz) == 1 else 1  # expand
     print_args(FILE.stem, opt)
