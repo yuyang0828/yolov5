@@ -238,7 +238,7 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
                         csv_height = csv_bbox[3] - csv_bbox[1]
                         csv_conf = conf.tolist()
                         csv_video_frame = p.name.replace('.jpg', '')
-                        one_line = [csv_video_frame, csv_left, csv_width, csv_top, csv_height, csv_conf]
+                        one_line = [[csv_video_frame, csv_left, csv_width, csv_top, csv_height, csv_conf]]
                         one_line = pd.DataFrame(one_line, columns=['video_frame', 'left', 'width', 'top', 'height', 'conf'])
                         csv_result.append(one_line)
                       
