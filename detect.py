@@ -30,6 +30,7 @@ from utils.general import apply_classifier, check_img_size, check_imshow, check_
 from utils.plots import Annotator, colors
 from utils.torch_utils import load_classifier, select_device, time_sync
 
+csv_result = []
 
 @torch.no_grad()
 def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
@@ -57,6 +58,7 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
         hide_conf=False,  # hide confidences
         half=False,  # use FP16 half-precision inference
         dnn=False,  # use OpenCV DNN for ONNX inference
+        save_csv=False
         ):
     source = str(source)
     save_img = not nosave and not source.endswith('.txt')  # save inference images
@@ -225,6 +227,20 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
                         annotator.box_label(xyxy, label, color=colors(c, True))
                         if save_crop:
                             save_one_box(xyxy, imc, file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg', BGR=True)
+                    if save_csv:
+                        csv_class = names[c]
+                        csv_bbox = torch.tensor(xyxy).view(1,4).view(-1).tolist()
+                        csv_left = csv_bbox[0]
+                        csv_width = csv_bbox[2] - csv_bbox[0]
+                        csv_top = csv_bbox[1]
+                        csv_height = csv_bbox[3] - csv_bbox[1]
+                        csv_conf = conf.tolist()
+                        csv_video_frame = p.name.replace('.jpg', '')
+                        print(csv_class)
+                        one_line = [csv_video_frame, csv_left, csv_width, csv_top, csv_height, csv_conf]
+                        print(one_line)
+                        one_line = pd.DataFrame(one_line, columns=['video_frame', 'left', 'width', 'top', 'height', 'conf'])
+                        csv_result.append(one_line)
 
             # Print time (inference-only)
             print(f'{s}Done. ({t3 - t2:.3f}s)')
@@ -262,6 +278,10 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
         print(f"Results saved to {colorstr('bold', save_dir)}{s}")
     if update:
         strip_optimizer(weights)  # update model (to fix SourceChangeWarning)
+    if save_csv:
+        csv_result = pd.concat(csv_result)
+        csv_result.to_csv(save_csv, index=False)
+        
 
 
 def parse_opt():
@@ -291,6 +311,7 @@ def parse_opt():
     parser.add_argument('--hide-conf', default=False, action='store_true', help='hide confidences')
     parser.add_argument('--half', action='store_true', help='use FP16 half-precision inference')
     parser.add_argument('--dnn', action='store_true', help='use OpenCV DNN for ONNX inference')
+    parse.add_argument('--save_csv', action='store_true')
     opt = parser.parse_args()
     opt.imgsz *= 2 if len(opt.imgsz) == 1 else 1  # expand
     print_args(FILE.stem, opt)
