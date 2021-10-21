@@ -232,15 +232,17 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
                       
                         csv_class = names[c]
                         csv_bbox = torch.tensor(xyxy).view(1,4).view(-1).tolist()
-                        csv_left = csv_bbox[0]
-                        csv_width = csv_bbox[2] - csv_bbox[0]
-                        csv_top = csv_bbox[1]
-                        csv_height = csv_bbox[3] - csv_bbox[1]
-                        csv_conf = conf.tolist()
+                        csv_left = int(round(csv_bbox[0]))
+                        csv_width = int(round(csv_bbox[2] - csv_bbox[0]))
+                        csv_top = int(round(csv_bbox[1]))
+                        csv_height = int(round(csv_bbox[3] - csv_bbox[1]))
+                        csv_conf = float(conf.tolist())
                         csv_video_frame = p.name.replace('.jpg', '')
                         one_line = [[csv_video_frame, csv_left, csv_width, csv_top, csv_height, csv_conf]]
                         one_line = pd.DataFrame(one_line, columns=['video_frame', 'left', 'width', 'top', 'height', 'conf'])
                         csv_result.append(one_line)
+                    else:
+                        print(names[c], p.name)
                       
 
             # Print time (inference-only)
